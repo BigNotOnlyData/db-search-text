@@ -1,0 +1,59 @@
+version: "3"
+services:
+  elastic:
+    image: elasticsearch:8.7.0
+    container_name: elastic-container
+    ports:
+      - 9200:9200
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    volumes:
+      - es:/usr/share/elasticsearch/data
+    networks:
+      - es_net
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-container
+    ports:
+      - 5433:5432
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=mytest
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - db_net
+  api:
+    build: ../backend
+    container_name: api-container
+    ports:
+      - 8000:8000
+    networks:
+      - db_net
+      - es_net
+      - api_net
+    depends_on:
+      - db
+      - elastic
+  web:
+    build: ../frontend
+    container_name: web-container
+    ports:
+      - 8501:8501
+    networks:
+      - api_net
+    depends_on:
+      - api
+
+volumes:
+  db:
+    driver: local  # волюмы создаются на локальном хосте
+  es:
+    driver: local
+
+networks:
+  db_net:
+  es_net:
+  api_net:
